@@ -6,9 +6,9 @@
 // そして、越えた先でドラッグを離すと、ファイルはぼんやりと消えていく…
 // idea: 2025/05/25
 
-let nodes = []; let numNodes = 40;
+let nodes = []; let numNodes = 50;
 //減衰（摩擦）係数
-let dampingNum = 0.97;
+let dampingNum = 0.98;
 
 function setup() {
   createCanvas(windowWidth, windowHeight);
@@ -142,7 +142,7 @@ class Node {
       let delta = p5.Vector.sub(this.pos, prevPos);
       for (let neighbor of this.neighbors) {
         if (neighbor && !neighbor.dragging) {
-          neighbor.applyForce(delta.copy().mult(0.01)); // 適度な強さで伝える
+          neighbor.applyForce(delta.copy().mult(0.03)); // 適度な強さで伝える
         }
       }
     }
@@ -171,15 +171,23 @@ class Node {
 
   checkHover(mx, my) {
     if (dist(mx, my, this.pos.x, this.pos.y) < this.radius) {
-      this.hovering = true;
-      this.active = true;
+      if (!this.hovering) {
+        // 新しくホバーし始めた時のみ処理
+        this.hovering = true;
+        this.active = true;
+      }
+      
       let prevPos = this.pos.copy();
-      this.pos.set(this.origin.x, my - dist(mx, my, this.pos.x, this.pos.y)); // マウスに追従
-
+      // ホバー時は単純にマウスのY座標に追従
+      this.pos.set(this.origin.x, my);
+      
+      // 隣接ノードに力を伝える（ホバー時は強めに）
       let delta = p5.Vector.sub(this.pos, prevPos);
-      for (let neighbor of this.neighbors) {
-        if (neighbor && !neighbor.dragging) {
-          neighbor.applyForce(delta.copy().mult(0.01));
+      if (delta.mag() > 0.1) { // 微小な変化は無視
+        for (let neighbor of this.neighbors) {
+          if (neighbor && !neighbor.isActive()) {
+            neighbor.applyForce(delta.copy().mult(0.05)); // ドラッグ時より強く
+          }
         }
       }
     } else {
